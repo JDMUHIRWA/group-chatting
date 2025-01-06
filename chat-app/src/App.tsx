@@ -2,87 +2,83 @@ import { useEffect, useState } from "react";
 import mysocket from "./utils/socket";
 
 function App() {
-  // States for input and messages
-  const [input, setInput] = useState("");
-  const [texts, setTexts] = useState<string[]>([]);
+  const [messages, setMessages] = useState("");
+  const [receivedMessage, setReceivedMessage] = useState("");
+  const [group, setGroup] = useState("");
 
-  // Function to handle sending messages
-  const sendMessage = () => {
-    if (input.trim()) {
-      const newMessage = { sender: "me", message: input };
-
-      // Add the message locally to the chat
-      setTexts((prevTexts) => [...prevTexts, newMessage]);
-
-      // Emit the message to the server
-      mysocket.emit("message", newMessage);
-
-      setInput(""); // Clear input field
+  const joinGroup = () => {
+    if (group !== "") {
+      mysocket.emit("join_group", group);
     }
   };
 
-  // Handle receiving messages
+  const sendMessage = () => {
+    mysocket.emit("message", { messages, group });
+  };
+
   useEffect(() => {
     mysocket.on("receive_message", (data) => {
-      setTexts((prevTexts) => [...prevTexts, data]); // Add the received message
+      setReceivedMessage(data.messages);
     });
-
-    return () => {
-      mysocket.off("receive_message"); // Cleanup listener on unmount
-    };
   }, []);
 
   return (
-    <>
-      {/* Header Section */}
-      <div className="flex flex-col items-center bg-gray-100 p-5 font-serif fixed w-full top-0">
-        <h1 className="text-2xl font-bold">Chat App</h1>
-        <p className="text-gray-600">Welcome to the chat app!</p>
-      </div>
+    <div className="min-h-screen bg-gray-100 p-4 md:p-8">
+      <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg">
+        {/* Header */}
+        <div className="bg-blue-600 rounded-t-xl p-6">
+          <h1 className="text-2xl font-bold text-white">Chat App</h1>
+        </div>
 
-      {/* Chat Section */}
-      <div className="flex flex-col items-center bg-gray-200 p-24 mt-20 h-[calc(100vh-162px)] overflow-y-auto">
-        {texts.length === 0 ? (
-          <small className="text-gray-500">
-            Chat messages will appear here.
-          </small>
-        ) : (
-          <ul className="w-full max-w-md">
-            {texts.map((text, index) => (
-              <li
-                key={index}
-                className={`p-2 my-2 rounded-lg shadow-sm ${
-                  text.sender === "me"
-                    ? "bg-blue-500 text-white self-end"
-                    : "bg-white text-gray-800"
-                }`}
-              >
-                {text.message}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+        {/* Group Join Section */}
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex gap-3">
+            <input
+              type="text"
+              placeholder="Enter group number"
+              value={group}
+              onChange={(e) => setGroup(e.target.value)}
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <button
+              onClick={joinGroup}
+              className="px-6 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 transition-colors duration-200"
+            >
+              Join Group
+            </button>
+          </div>
+        </div>
 
-      {/* Input Section */}
-      <div className="flex items-center justify-center bg-gray-100 p-5 fixed bottom-0 w-full">
-        <input
-          type="text"
-          placeholder="Type a message..."
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          className="w-3/4 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          aria-label="Type your message"
-        />
-        <button
-          onClick={sendMessage}
-          className="bg-blue-500 text-white p-2 rounded-lg ml-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          aria-label="Send message"
-        >
-          Send
-        </button>
+        {/* Chat Section */}
+        <div className="p-6">
+          {/* Messages Display */}
+          <div className="mb-6 h-[400px] bg-gray-50 rounded-lg p-4 overflow-y-auto">
+            {receivedMessage && (
+              <div className="bg-blue-100 rounded-lg p-3 mb-2 max-w-[80%]">
+                <h2 className="text-gray-800">{receivedMessage}</h2>
+              </div>
+            )}
+          </div>
+
+          {/* Message Input */}
+          <div className="flex gap-3">
+            <input
+              type="text"
+              placeholder="Type your message here"
+              value={messages}
+              onChange={(e) => setMessages(e.target.value)}
+              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <button
+              onClick={sendMessage}
+              className="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2"
+            >
+              Send
+            </button>
+          </div>
+        </div>
       </div>
-    </>
+    </div>
   );
 }
 
